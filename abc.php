@@ -9,20 +9,22 @@ mysql_select_db('test', $conn) or die("Invalid query: " . mysql_error());
 
 echo "<br/>";
 
-$data = 'abc.txt';
+
+$data = 'run_log.txt';
 $fp = fopen($data, 'r');
 while($r = fgets($fp)) {
-  $t = join("','", explode(',', $r));
-  $sql = "insert into serial_number(serial_number,msg2) values ('$t')";
+  $t = join("','", explode(',',$r));
+  echo $t;
+  $sql = "insert into logon_device values ('$t')";
    mysql_query($sql);
 }
 
 
- $result = mysql_query("select * from serial_number");
+ $result = mysql_query("select * from logon_device");
  $fp_write = fopen("data.txt","w");
 while($row = mysql_fetch_array($result,MYSQL_NUM))
 {
-    fwrite($fp_write,$row[0].",".$row[1].",".$row[2]);
+    fwrite($fp_write,$row[0].",".$row[1].",".$row[2].",".$row[3].",".$row[4]."\n");
 } 
 fclose($fp_write);
  
@@ -34,6 +36,10 @@ while(!feof($fp_read))
     echo $line;
 }
 fclose($fp_read);
- 
+
+
+$fp_write = fopen("file1.txt","w");
+				fwrite("pause");
+				fclose($fp_write); 
 
 ?>
