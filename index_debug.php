@@ -44,7 +44,7 @@ class wechatCallbackapiTest
         }
     }
 	
-	private function getLogonDetail(){
+	private function getLogonDetail($wx_user){
 		//主机名
 $db_host = 'w.rdc.sae.sina.com.cn';
 //用户名
@@ -55,45 +55,60 @@ $db_password = '30mxzllx1x4xyihilww1hjxjx5jjzxiz24ykjzm4';
 $db_name = 'app_dabing6688';
 //端口
 $db_port = '3306';
+$lines = "";
+//$conn = mysql_connect($db_host,$db_user,$db_password) or die("Invalid query: " . mysql_error());
+//mysql_select_db($db_name, $conn) or die("Invalid query: " . mysql_error());
+$conn = mysqli_connect($db_host,$db_user,$db_password,$db_name) or die('连接数据库失败！');
 
-$conn = mysql_connect($db_host,$db_user,$db_password) or die("Invalid query: " . mysql_error());
-mysql_select_db($db_name, $conn) or die("Invalid query: " . mysql_error());
-//$conn = mysqli_connect($db_host,$db_user,$db_password,$db_name) or die('连接数据库失败！');
-/**
 if ( mysqli_connect_errno ()) {
          printf ( "Connect failed: %s\n" ,  mysqli_connect_error ());
         exit();
     }
-*/	
+
     //$limit = 10;
-    //$query  =  "SELECT * FROM personal_info LIMIT ".$limit ;
-    //$result  =  $conn -> query ( $query );	
+  
+	
+	
+	
+	$dir=$wx_user."/log";
+	if (is_dir($dir)) {
+	if ($dh = opendir($dir)) {
+		while (($file = readdir($dh)) !== false) {			
+			if ($file != "." and $file != ".." ){
+			//$data = $file;			
+			if (file_exists($dir."/".$file)){	 
+				$fp = fopen($dir."/".$file, 'r');
+				while($r = fgets($fp)) {
+					$t = join("','", explode(',',$r));
+					echo $t;
+					$sql = "insert into logon_device values ('$t')";
+					//mysql_query($sql);
+					$conn -> query ( $sql );	
+				}
+			}
+			}
+	
+			//echo "filename: $file : filetype: " . filetype($dir . $file) . "\n";
+ 
+		} 
+		closedir($dh);
+	}
+	}
+
+  $query  =  "SELECT * FROM logon_device " ;
+    $result  =  $conn -> query ( $query );	
  
     /* associative array */
-    /**
-	while($row  = $result -> fetch_array ( MYSQLI_ASSOC )){
-        echo $row['pi_id'] . "\t";
-        echo $row['pi_name'] . "\t";
-        echo $row['pi_tel'] . "\t";
-        echo $row['pi_qq'] . "\t";
-        echo $row['pi_email'] . "\t";
-        echo "<br/>". PHP_EOL;
+   
+	while($row  = $result -> fetch_array ( MYSQLI_ASSOC )){       
+		$lines=$lines.$row['device_type'].",".$row['device_name'].",".$row['device_uiid'].",".$row['device_serial_number'].",".$row['logon_time']."\n";
     }
-	*/
+	
     /* free result set */
-    //$result -> free (); 
- $data = 'run_log.txt';
- if (file_exists($data)){
-	 
- 
-$fp = fopen($data, 'r');
-while($r = fgets($fp)) {
-  $t = join("','", explode(',',$r));
-  echo $t;
-  $sql = "insert into logon_device values ('$t')";
-   mysql_query($sql);
-}
-}
+    $result -> free (); 
+	mysqli_close($conn);	
+	
+/**	
 $lines="";
  $result = mysql_query("select * from logon_device");
  //$fp_write = fopen("data.txt","w");
@@ -103,6 +118,9 @@ while($row = mysql_fetch_array($result,MYSQL_NUM))
    $lines=$lines.$row[0].",".$row[1].",".$row[2].",".$row[3].",".$row[4]."\n";
 } 
 //fclose($fp_write);
+
+*/
+
  return $lines;
 	}
 
@@ -132,43 +150,62 @@ while($row = mysql_fetch_array($result,MYSQL_NUM))
                 echo $resultStr;
 				
             }elseif($keyword == "pause"|| $keyword == "暂停" ){
-				$fp_write = fopen("file1.txt","w");
+				//from:oR2LbwALAA43VxqMtW0dI1H71AqMto:gh_3a4eea335ecc
+				if ($fromUsername=="oR2LbwALAA43VxqMtW0dI1H71AqM"){
+									
+				$fp_write = fopen($fromUsername."/switch_pause/file1.txt","w");
 				fwrite($fp_write,"pause");
 				fclose($fp_write);
 				$msgType = "text";
                 $contentStr = "暂停,等待10秒";
                 $resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
                 echo $resultStr;
+				}else{
+					echo "";
+					exit;
+				}
 			}
 			elseif($keyword == "continue"|| $keyword == "继续" ){
-				$fp_write = fopen("file1.txt","w");
+				if ($fromUsername=="oR2LbwALAA43VxqMtW0dI1H71AqM"){
+				$fp_write = fopen($fromUsername."/switch_pause/file1.txt","w");
 				fwrite($fp_write,"continue");
 				fclose($fp_write);
 				$msgType = "text";
                 $contentStr = "继续跑脚本";
                 $resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $contentStr);
                 echo $resultStr;
+				}else{
+					echo "";
+					exit;
+				}
 			}
 			elseif($keyword == "php" )
             {
-				//$lines="";
+				$lines="";
+				if ($fromUsername=="oR2LbwALAA43VxqMtW0dI1H71AqM"){				
                 $msgType = "text";   
-				$fileutil = new FileUtil();				
-				
-				/**
-				$fp_read=fopen("run_log.txt","r"); 
-				while(!feof($fp_read))
-				{
-					$line = fgets($fp_read, 255); 					
-					$lines=$lines.$line;
-				}
-				fclose($fp_read); 
-				*/
-				$lines=$this->getLogonDetail();
-				$lines=$lines.",from:".$fromUsername."to:".$toUsername;
-				$fileutil ->moveFile('run_log.txt','wxpay/run_log.txt');
-				$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $lines);
-                echo $resultStr;          
+				$fileutil = new FileUtil();
+				$lines=$this->getLogonDetail($fromUsername);
+				$lines=$lines.",from:".$fromUsername.",to:".$toUsername;
+				$dir=$fromUsername."/log";					
+	if (is_dir($dir)) {
+	if ($dh = opendir($dir)) {
+		while (($file = readdir($dh)) !== false) {
+			if ($file != "." and $file != ".." ){					
+			if (file_exists($dir."/".$file)){	 				
+				$fileutil ->moveFile($dir."/".$file,$fromUsername.'/bak_log/'.$file);
+			}
+			}
+		} 
+		closedir($dh);
+	}
+	}	
+				$resultStr = sprintf($textTpl, $fromUsername, $toUsername, $time, $msgType, $lines);				
+				echo $resultStr; 
+				}else{
+					echo "";
+					exit;
+				}				
 			}else{
 				echo "";
 				exit;
