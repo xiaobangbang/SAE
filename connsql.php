@@ -1,86 +1,113 @@
+<META http-equiv="content-type" content="text/html; charset=UTF-8"> 
 <?php
 
-//主机名
+ //header("Content-Type:text/html;charset=UTF-8");
+include 'file_tool.php';
+class Test
+{
+	
+private function getConn(){
 $db_host = 'localhost';
-//用户名
 $db_user = 'root';
-//密码
 $db_password = 'root';
-//数据库名
 $db_name = 'test';
-//端口
 $db_port = '3306';
-
 $conn = mysqli_connect($db_host,$db_user,$db_password,$db_name) or die('连接数据库失败！');
-
-
-/**
 if ( mysqli_connect_errno ()) {
          printf ( "Connect failed: %s\n" ,  mysqli_connect_error ());
         exit();
     }
-*/	
-    $limit = 10;
-    $query  =  "SELECT * FROM personal_info LIMIT ".$limit ;
-    $result  =  $conn -> query ( $query );
- 
-    /* associative array */
-    while($row  = $result -> fetch_array ( MYSQLI_ASSOC )){
-        echo $row['pi_id'] . "\t";
-        echo $row['pi_name'] . "\t";
-        echo $row['pi_tel'] . "\t";
-        echo $row['pi_qq'] . "\t";
-        echo $row['pi_email'] . "\t";
-        echo "<br/>". PHP_EOL;
+return $conn;
+}
+
+private function genSqlFromLogFile($fromUsername){
+$sql="";
+$dir=$fromUsername."/log";
+//$fileutil = new FileUtil();
+	if (is_dir($dir)) {
+	if ($dh = opendir($dir)) {		
+		while (($file = readdir($dh)) !== false) {			
+			if ($file != "." and $file != ".." ){			
+			if (file_exists($dir."/".$file)){	 
+				$fp = fopen($dir."/".$file, 'r');
+				$sql .= "insert into ".substr($file,0,strpos($file,"-"))." values ";				
+				echo "<br/>";
+				while($r = fgets($fp)) {
+					$t = join("','", explode(',',$r));					
+					$sql .= "('$t')".",";					
+				}
+				$sql= rtrim($sql, ",").";" ;
+				//$fileutil ->moveFile($dir."/".$file,$fromUsername.'/bak_log/'.$file);
+			}
+			}
+		} 
+		closedir($dh);
+	}
+	}
+	return $sql;
+}	
+
+
+private function moveLogFile($fromUsername){
+	$fileutil = new FileUtil();
+	$dir=$fromUsername."/log";					
+	if (is_dir($dir)) {
+	if ($dh = opendir($dir)) {
+		while (($file = readdir($dh)) !== false) {
+			if ($file != "." and $file != ".." ){					
+			if (file_exists($dir."/".$file)){	 				
+				$fileutil ->moveFile($dir."/".$file,$fromUsername.'/bak_log/'.$file);
+			}
+			}
+		} 
+		closedir($dh);
+	}
+	}		
+}
+	
+public function importLogFile($fromUsername){
+	
+	$conn = $this->getConn();
+	$this->importLogFile2($conn,$fromUsername);
+	mysqli_close($conn);
+}
+
+
+private function importLogFile2($conn,$fromUsername){
+	$sql = $this->genSqlFromLogFile($fromUsername);
+	$query_e = explode(';',$sql);	
+	foreach ($query_e as $k =>$v)
+	{
+		//echo $query_e[$k];
+		if (strlen($query_e[$k]) >1){
+			$conn -> query ($query_e[$k]);	
+		}
+	}
+	$this->moveLogFile($fromUsername);
+}
+
+
+public function simpleQueryFromView1($view_name,$fromUsername) {
+	$lines="";
+	$query  =  "SELECT * FROM  ".$view_name ;
+	$conn = $this->getConn();
+    $this->importLogFile2($conn,$fromUsername);
+	$result  =  $conn -> query ( $query );	
+   
+	while($row  = $result -> fetch_array ( MYSQLI_ASSOC )){       
+		$lines.=$row['device_type'].",".$row['device_name'].",".$row['device_udid'].",".$row['device_serial_number'].",".$row['logon_time']."\n";
     }
- 
-    /* free result set */
-    $result -> free ();
- 
- /* close connection */
-    $conn -> close ();
+	   
+    $result -> free (); 
+	mysqli_close($conn);
 	
-	
-$path = "/home/httpd/html/index.php"; 
-$file = basename($path,".php"); // $file is set to "index" 
-
-$path = "/sdfsf/ssdf/etc/passwd"; 
-$file = dirname($path); // $file is set to "/etc" 
-
-echo $file;
+	return $lines;
+}
 
 
-$pathinfo = pathinfo("www/test/index.html"); 
-var_dump($pathinfo); 
+}
 
-echo '<br/>';
-echo $pathinfo['dirname'];
-echo '<br/>';
-echo $pathinfo['basename'];
-echo '<br/>';
-echo $pathinfo['extension'];
-echo '<br/>';
-echo $pathinfo['filename'];
-echo '<br/>';
-
-echo filetype('csv_monitor.php'); // file 
-echo '<br/>';
-echo filetype('..'); // dir 
-
-include 'file_tool.php';
-
-$create1 = new FileUtil();
-
-//$create1 ->createDir('a/1/2/3');
-
-//$create1 ->createFile('b/1/2/3');                    //测试建立文件        在b/1/2/文件夹下面建一个3文件
- //$create1 ->createFile('b/1/2/3.exe');             //测试建立文件        在b/1/2/文件夹下面建一个3.exe文件
- //$create1 ->copyDir('b','d/e');                    //测试复制文件夹 建立一个d/e文件夹，把b文件夹下的内容复制进去
-//$create1 ->copyFile('b/1/2/3.exe','b/b/3.exe'); //测试复制文件        建立一个b/b文件夹，并把b/1/2文件夹中的3.exe文件复制进去
- //$create1 ->moveDir('a/','b/c');                   // 测试移动文件夹 建立一个b/c文件夹,并把a文件夹下的内容移动进去，并删除a文件夹
- $create1 ->moveFile('b/1/2/3.exe','b/d/3.exe'); //测试移动文件        建立一个b/d文件夹，并把b/1/2中的3.exe移动进去                   
- //$create1 ->unlinkFile('b/d/3.exe');             //测试删除文件        删除b/d/3.exe文件
- //$create1 ->unlinkDir('d');          
- 
-
+$test1 = new Test();
+$result_str = $test1->simpleQueryFromView1("logon_device","oR2LbwALAA43VxqMtW0dI1H71AqM");	
+echo $result_str;
 ?>
