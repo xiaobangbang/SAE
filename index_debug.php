@@ -220,7 +220,9 @@ class wechatCallbackapiTest
 				if ($fromUsername=="oR2LbwALAA43VxqMtW0dI1H71AqM"){
 									
 				$fp_write = fopen($fromUsername."/switch_pause/file1.txt","w");
-				fwrite($fp_write,"pause");
+				//fwrite($fp_write,"pause");
+				fwrite($fp_write,"pause".",".date("Y-m-d H:i:s",time()));
+				 
 				fclose($fp_write);
 				$msgType = "text";
                 $contentStr = "暂停,等待10秒";
@@ -234,7 +236,7 @@ class wechatCallbackapiTest
 			elseif($keyword == "continue"|| $keyword == "继续" ){
 				if ($fromUsername=="oR2LbwALAA43VxqMtW0dI1H71AqM"){
 				$fp_write = fopen($fromUsername."/switch_pause/file1.txt","w");
-				fwrite($fp_write,"continue");
+				fwrite($fp_write,"continue".",".date("Y-m-d H:i:s",time()));
 				fclose($fp_write);
 				$msgType = "text";
                 $contentStr = "继续跑脚本";
